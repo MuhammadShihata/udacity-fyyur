@@ -57,7 +57,8 @@ def create_venue_submission():
     # Get the data
     form = VenueForm(request.form,  meta={'csrf': False})
     form_data = form.data
-    
+    form_data.update({"seeking_talent": bool(form_data['seeking_talent'])})
+
     # Create the venue
     created = Venue.create(form_data)
     
@@ -112,10 +113,11 @@ def edit_venue_submission(venue_id):
     
     if updated:
         flash('Venue updatdeded successfully!')
+        return redirect(url_for('show_venue', venue_id=venue_id))
     else: 
         flash('Sorry, an error occurred.')
-    
-    return redirect(url_for('show_venue', venue_id=venue_id))
+        return redirect(url_for('edit_venue', venue_id=venue_id))
+
 
 # DELETE
 @app.route('/venues/<venue_id>/delete', methods=['GET'])
@@ -149,6 +151,7 @@ def create_artist_submission():
     # Get the data
     form = ArtistForm(request.form, csrf_enabled=False)
     form_data = form.data
+    form_data.update({'seeking_venue': bool(form_data['seeking_venue'])})
     
     # Create the venue
     created = Artist.create(form_data)
@@ -206,10 +209,11 @@ def edit_artist_submission(artist_id):
     
     if updated:
         flash('Artist updatdeded successfully!')
+        return redirect(url_for('show_artist', artist_id=artist_id))                       
     else: 
         flash('Sorry, an error occurred.')
+        return redirect(url_for(f'edit_artist', artist_id=artist_id))                       
     
-    return redirect(url_for('show_artist', artist_id=artist_id))                       
 
 
 """ SHOWS """

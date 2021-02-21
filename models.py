@@ -111,7 +111,7 @@ class Venue(db.Model):
             } for venue in venues]
         }
 
-    def update(self, name, city, state, address, phone, image_link, genres, facebook_link):
+    def update(self, name, city, state, address, phone, image_link, genres, facebook_link, website, seeking_talent, seeking_description):
         error = False
         try:
             # Updating the available fields in the update form 
@@ -123,6 +123,9 @@ class Venue(db.Model):
             self.image_link = image_link
             self.genres = genres
             self.facebook_link = facebook_link
+            self.website = website
+            self.seeking_talent = bool(seeking_talent)
+            self.seeking_description = seeking_description
             db.session.commit()
         except:
             print(sys.exc_info())
@@ -226,7 +229,7 @@ class Artist(db.Model):
             } for artist in artists]
         }
 
-    def update(self, name, city, state, phone, image_link, genres, facebook_link):
+    def update(self, name, city, state, phone, image_link, genres, facebook_link, website, seeking_venue, seeking_description):
         error = False
         try:
             # Updating the available fields in the update form 
@@ -237,6 +240,9 @@ class Artist(db.Model):
             self.image_link = image_link
             self.genres = genres
             self.facebook_link = facebook_link
+            self.website = website
+            self.seeking_venue = bool(seeking_venue)
+            self.seeking_description = seeking_description
             db.session.commit()
         except:
             print(sys.exc_info())
