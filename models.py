@@ -23,19 +23,36 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String())
     image_link = db.Column(db.String())
     shows = db.relationship('Show', backref='venue', lazy='dynamic') 
-    # Enabled dynamic to be able to compare between start_time and now
+    # Enabled dynamic to be able to compare between start_time and the current time
 
     def upcoming_shows(self):
-        return self.shows.filter(Show.start_time > datetime.now()).all()
+        shows_filtered = db.session.query(Show, Artist).join(Artist)\
+            .filter(Show.venue_id == self.id)\
+            .filter(Show.start_time > datetime.now()).all()
 
-    def upcoming_shows_count(self):
-        return self.shows.filter(Show.start_time > datetime.now()).count()
+        upcoming_shows_serialized = [{
+            "artist_id": artist.id,
+            "artist_name": artist.name,
+            "artist_image_link": artist.image_link,
+            "start_time": str(show.start_time)
+        } for show, artist in shows_filtered]
+        
+        return upcoming_shows_serialized
 
     def past_shows(self):
-        return self.shows.filter(Show.start_time < datetime.now()).all()
+        shows_artists_filtered = db.session.query(Show, Artist).join(Artist)\
+            .filter(Show.venue_id == self.id)\
+            .filter(Show.start_time < datetime.now()).all()
+ 
+        past_shows_serialized = [{
+            "artist_id": artist.id,
+            "artist_name": artist.name,
+            "artist_image_link": artist.image_link,
+            "start_time": str(show.start_time)
+        } for show, artist in shows_artists_filtered]
 
-    def past_shows_count(self):
-        return self.shows.filter(Show.start_time < datetime.now()).count()
+        return past_shows_serialized
+
 
     def serialize(self):
         return {
@@ -51,12 +68,10 @@ class Venue(db.Model):
             "seeking_talent": self.seeking_talent,
             "seeking_description": self.seeking_description,
             "image_link": self.image_link,
-            "past_shows": [
-                show.serialize_for_venue() for show in self.past_shows()],
-            "upcoming_shows": [
-                show.serialize_for_venue() for show in self.upcoming_shows()],
-            "past_shows_count": self.past_shows_count(),
-            "upcoming_shows_count": self.upcoming_shows_count()
+            "past_shows": self.past_shows(),
+            "upcoming_shows": self.upcoming_shows(),
+            "past_shows_count": len(self.past_shows()),
+            "upcoming_shows_count": len(self.upcoming_shows())
         }
 
     @classmethod
@@ -76,7 +91,7 @@ class Venue(db.Model):
                 "venues": [{
                         "id": venue.id,
                         "name": venue.name,
-                        "num_upcoming_shows": venue.upcoming_shows_count()
+                        "num_upcoming_shows": len(venue.upcoming_shows())
                     } for venue in venues]
             })
         return data
@@ -107,7 +122,7 @@ class Venue(db.Model):
             "data": [{
                 "id": venue.id,
                 "name": venue.name,
-                "num_upcoming_shows": venue.upcoming_shows_count()    
+                "num_upcoming_shows": len(venue.upcoming_shows())    
             } for venue in venues]
         }
 
@@ -167,16 +182,32 @@ class Artist(db.Model):
     shows = db.relationship('Show', backref='artist', lazy='dynamic')
 
     def upcoming_shows(self):
-        return self.shows.filter(Show.start_time > datetime.now()).all()
-
-    def upcoming_shows_count(self):
-        return self.shows.filter(Show.start_time > datetime.now()).count()
+        shows_venues_filtered = db.session.query(Show, Venue).join(Venue)\
+            .filter(Show.artist_id == self.id)\
+            .filter(Show.start_time > datetime.now()).all()
+       
+        upcoming_shows_serialized = [{
+            "venue_id": venue.id,
+            "venue_name": venue.name,
+            "venue_image_link": venue.image_link,
+            "start_time": str(show.start_time)
+        } for show, venue in shows_venues_filtered]
+        
+        return upcoming_shows_serialized
 
     def past_shows(self):
-        return self.shows.filter(Show.start_time < datetime.now()).all()
+        shows_venues_filtered = db.session.query(Show, Venue).join(Venue)\
+            .filter(Show.artist_id == self.id)\
+            .filter(Show.start_time < datetime.now()).all()
 
-    def past_shows_count(self):
-        return self.shows.filter(Show.start_time < datetime.now()).count()
+        past_shows_serialized = [{
+            "venue_id": venue.id,
+            "venue_name": venue.name,
+            "venue_image_link": venue.image_link,
+            "start_time": str(show.start_time)
+        } for show, venue in shows_venues_filtered]
+        
+        return past_shows_serialized
 
     def serialize(self):
         return {
@@ -191,12 +222,10 @@ class Artist(db.Model):
             "seeking_venue": self.seeking_venue,
             "seeking_description": self.seeking_description,
             "image_link": self.image_link,
-            "past_shows": [
-                show.serialize_for_artist() for show in self.past_shows()],
-            "upcoming_shows": [
-                show.serialize_for_artist() for show in self.upcoming_shows()],
-            "past_shows_count": self.past_shows_count(),
-            "upcoming_shows_count": self.upcoming_shows_count()
+            "past_shows": self.past_shows(),
+            "upcoming_shows": self.upcoming_shows(),
+            "past_shows_count": len(self.past_shows()),
+            "upcoming_shows_count": len(self.upcoming_shows())
         }
 
     @classmethod
@@ -225,7 +254,7 @@ class Artist(db.Model):
             "data": [{
                 "id": artist.id,
                 "name": artist.name,
-                "num_upcoming_shows": artist.upcoming_shows_count()    
+                "num_upcoming_shows": len(artist.upcoming_shows())    
             } for artist in artists]
         }
 
@@ -271,21 +300,21 @@ class Show(db.Model):
             "start_time": str(self.start_time)
         }   
     
-    def serialize_for_venue(self):
-        return {
-            "artist_id": self.artist_id,
-            "artist_name": self.artist.name,
-            "artist_image_link": self.artist.image_link,
-            "start_time": str(self.start_time)
-        }
+    # def serialize_for_venue(self):
+    #     return {
+    #         "artist_id": self.artist_id,
+    #         "artist_name": self.artist.name,
+    #         "artist_image_link": self.artist.image_link,
+    #         "start_time": str(self.start_time)
+    #     }
 
-    def serialize_for_artist(self):
-        return {
-            "venue_id": self.venue_id,
-            "venue_name": self.venue.name,
-            "venue_image_link": self.venue.image_link,
-            "start_time": str(self.start_time)
-        }
+    # def serialize_for_artist(self):
+    #     return {
+    #         "venue_id": self.venue_id,
+    #         "venue_name": self.venue.name,
+    #         "venue_image_link": self.venue.image_link,
+    #         "start_time": str(self.start_time)
+    #     }
 
     @classmethod
     def create(cls, data):
